@@ -1,0 +1,523 @@
+测试服务器
+阿里云测试外网：
+域名：http://ctest.ipcn.ltd
+access_key_id：
+8RCBdLK9lEyuUcjx1DjUf4_VDadoZIc0
+access_key_secret：
+7jZ0R_zMLzzlUZI9bUufAUHK0q7ifnBN2m=R36j7bvboY7YMZzeq0TQTIYwlJuLf
+
+局域网：
+域名：192.168.1.113
+access_key_id：
+JvxXqdfcdiBUqwyTfKNgTvS3swwQmETb
+access_key_secret：
+aSA5Eg6oTkkUy0ORr7WYh79hKqIkyUjO_DvqGjhuaJ8pp7jzPoKiP_u3r3Du6PTy
+
+
+1.获取token （服务端redis缓存可以设置失效时间）
+url：/api/get/token/
+方法：post
+格式：json
+请求字段：（主要是安全接入）
+          access_key_id
+                   FIhfrVQyQjWy7oB72pkBcvG7gbTPly=s
+          access_key_secret
+                   PCL60UgbcQIUPYGFnHSnL1bYXUlqv4bJEg3yVbnDK_fLNSyNPwgCGe1XVwa=LeFX
+响应结果： 
+           code=0  --服务器异常
+           code=1000  --正常返回
+                      token--客户端需要存入缓存，后续每个接口都要加入（每次生成都不一样）
+           code=1001  --access_key_id、access_key_secret 无效
+           code=1002  --access_key_id或者access_key_secret 为空
+
+其余所有接口都要按照下面规则进行封装（客户端需要封装一下）
+请求字段：params={'token': '', 'vsign': '', 'timestamp', '', 'i': ''}
+                  token–客户端缓存的token
+                  timestamp–当前时间戳
+                  i--将其余参数base64
+                             * 要传递的参数*params={key: value}*
+                             * 对*params*转为json字符串, 得到*string_params*
+                             * 对*string_parms*进行base64转换, 得到base64_string_params
+                  vsgin–签名
+                            获取签名*vsign*, 签名由*base64_string_params*参数, 时间戳*timestamp, token*组合后计算md5得到并且全部大写
+
+类似于这样（js代码）
+var timestamp = new Date().getTime()
+var base64_i = base64.Base64.encode(JSON.stringify(params.data))
+var token = app.globalData.token
+var vsign_origin = 'i=' + base64_i + '&timestamp=' + timestamp + '&token=' + token
+var vsign = md5(vsign_origin).toUpperCase()
+var new_data = {
+token: token,
+timestamp: timestamp,
+i: base64_i,
+vsign: vsign
+}               
+响应结果：
+              code=-1 没有token或者token失效（客户端跳转到登陆页面进行重新登陆）
+              code=-2 没有时间戳
+              code=-3 没有签名或者签名错误
+              （以上三种除了获取token接口，都会存在）
+              code=-4 没有用户cid(app_user_cid)
+              code=-5 用户cid无效
+               （以上2种在需要用户登陆的接口会存在）
+
+2.用户注册第一步
+url:/api/member/register_captcha/
+方法：post
+格式：json
+请求字段：
+          phone  手机号码
+          captcha 验证码     
+响应结果：
+         code=0  --服务器异常
+         code=1000 --正常返回
+         code=1001 手机号码无效
+         code=1002 手机号码已注册
+         code=1003 验证码不对
+         code=1004 验证码已过期
+         code=1010 手机号码不能为空
+         code=1011 验证码不能为空
+
+3.用户注册（注册后直接登陆）
+url:/api/member/register/
+方法：post
+格式：json
+请求字段：
+          phone  手机号码
+          captcha 验证码     
+          password 密码
+          repeat_password  重复密码
+响应结果：
+         code=0  --服务器异常
+         code=1000 --正常返回
+                          app_user_cid 用户编号（客户端需要缓存）
+         code=1001 手机号码无效
+         code=1002 手机号码已注册
+         code=1003 验证码不对
+         code=1004 验证码已过期
+         code=1005 密码不符合规则
+         code=1006 2次密码不匹配
+         code=1010 手机号码不能为空
+         code=1011 验证码不能为空
+         code=1012 密码不能为空
+
+4. 用户验证码登陆
+url:/api/member/captcha_login/
+方法：post
+格式：json
+请求字段：
+          phone 手机号码  
+          captcha 验证码
+响应结果：
+         code=0 --服务器异常
+         code=1000 --正常返回
+                      app_user_cid 用户编号（客户端需要缓存）
+         code=1001 手机号码无效
+         code=1002 手机号码未注册
+         code=1003 验证码不对
+         code=1010 手机号码不能为空
+         code=1011 验证码不能为空
+         
+5.用户密码登陆
+url:/api/member/password_login/
+方法：post
+格式：json
+请求字段：
+        phone 手机号码
+        password 密码
+响应结果：
+        code=0 --服务器异常
+        code=1000 --正常返回
+                   app_user_cid 用户编号（客户端需要缓存)
+        code=1001 手机号码无效
+        code=1002 密码不正确
+        code=1003 手机号码不能为空
+        code=1004 密码不能为空
+        code=1005 手机号码未注册
+
+6.找回密码
+url:/api/member/find_password/
+方法：post
+格式：json
+请求字段:
+           phone 手机号码
+           captcha 验证码
+           password 密码
+           repeat_password 二次输入
+响应结果：
+          code=0 --服务器异常
+          code=1000 --正常返回
+          code=1001 手机号码无效
+          code=1002 手机号未注册
+          code=1003 验证码不正确
+          code=1005 密码规则不符合规范
+          code=1006 两次输入密码不一致
+
+          code=1010 手机号码不能为空
+          code=1011 验证码不能为空
+          code=1012 密码不能为空
+
+7.每次用户登陆信息统计
+url:/api/member/login_statistics/
+方法: post
+格式：json
+请求字段：
+            app_user_cid 用户编号
+            device_info  设备信息
+            device_type 设备类型
+            app_version app版本编号
+响应结果：
+            code=0 --服务器异常
+            code=1000 正常返回
+
+8.发送验证码（异步任务，每个手机号码一天限制10次）
+url:/api/get/sms/
+方法：post
+格式：json
+请求字段：
+          phone
+响应结果：
+          code=0 --服务器异常
+          code=1000 正常返回
+          code=1001 手机号为空
+          code=1002 手机号码格式不对
+          code=1003 验证码发送失败
+          code=1004 当天该号码发送已达上限10次
+          
+9.创建相册
+url:/api/album/create/
+方法：post
+格式：json
+请求字段：
+          app_user_cid 用户编号
+          name 相册名称
+          type 类型（图片或者视频）
+响应结果：
+         code=0 --服务器异常
+         code=1000 正常返回
+         code=1002 相册名称为空
+         code=1003 类型为空
+         code=1004 相册名称不能重复
+         code=1005 相册名称规则不匹配
+
+10.删除相册
+url:/api/album/delete/
+方法：post
+格式：json
+请求字段：
+          app_user_cid 用户编号
+          album_cid 相册编号
+响应结果：
+          code=0 --服务器异常
+          code=1000 正常返回
+          code=1002 相册编号为空或者无效
+
+11.相册列表
+url:/api/album/list/
+方法：post
+格式：json
+请求字段：
+          app_user_cid 用户编号
+          type 类型（图片或者视频）
+响应结果：
+          code=0 --服务器异常
+          code=1000 正常返回
+                     list:[
+                            {'name':"123",'count':60,'cid':'xxxxx'},
+                            {'name':"456",'count':40,'cid':'yyyy'}
+                          ]
+          code=1002 类型为空
+
+12.修改相册名称
+url:/api/album/edit/
+方法：post
+格式：json
+请求字段：
+          app_user_cid 用户编号
+          album_cid 相册编号
+          name 相册名称
+响应结果：
+          code=0 --服务器异常
+          code=1000 正常返回
+          code=1002 相册编号为空或者无效
+          code=1003 相册名称为空
+          code=1004 相册名称不能重复
+          code=1005 相册名称规则不匹配
+
+13.图片上传(每次上传有数量限制,需要同步上传任务)
+url:/api/picture/upload/
+方法：post
+格式：json
+请求字段：
+          app_user_cid 用户编号
+          album_cid 相册编号
+          num:文件数量
+          file0:文件对象
+          file1:文件对象
+          file*:....
+响应结果：
+          code=0 --服务器异常
+          code=1000 正常返回
+          code=1002 相册编号为空或者无效
+          code=1003 没有文件
+
+14.相册图片列表
+url:/api/picture/album/list/
+方法：post
+格式：json
+请求字段：
+         app_user_cid 用户编号
+         album_cid 相册编号
+响应结果：
+         code=0 --服务器异常
+         code=1000 正常返回
+               list:[
+                   {
+                   
+                   }
+               
+               ]
+         code=1002 相册编号为空或者无效
+
+15.相册图片全部（按照日期倒序）
+url:/api/picture/all/
+方法：post
+格式：json
+请求字段：
+         app_user_cid 用户编号
+响应结果：
+         code=0 --服务器异常
+         code=1000 正常返回
+               list:[
+                   {
+                   'day':'2020-04-20',
+                   'day_picture_list':[
+                        {
+                            'cid':'xxxx',
+                            'hash':'****',
+                            .....
+                            
+                        }
+                    ]
+                   }
+               
+               ]
+
+16.视频上传(每次上传有数量限制，单个文件有大小限制,需要同步上传任务)
+url:/api/video/upload/
+方法：post
+格式：json
+请求字段：
+          app_user_cid 用户编号
+          album_cid 相册编号
+          num:文件数量
+          file0:文件对象
+          file1:文件对象
+          file*:....
+响应结果：
+          code=0 --服务器异常
+          code=1000 正常返回
+          code=1002 相册编号为空或者无效
+          code=1003 没有文件
+
+
+17.相册视频列表
+url:/api/video/album/list/
+方法：post
+格式：json
+请求字段：
+         app_user_cid 用户编号
+         album_cid 相册编号
+响应结果：
+         code=0 --服务器异常
+         code=1000 正常返回
+         code=1002 相册编号为空或者无效
+
+18.图片/视频 删除（进入回收站，支持多个）
+url:/api/file/delete/
+方法：post
+格式：json
+请求字段：
+           app_user_cid 用户编号
+           album_cid 相册编号
+           file_cid_list 文件编号
+响应结果：
+           code=0 --服务器异常
+           code=1000 正常返回
+           code=1002 相册编号为空或者无效
+
+19.图片/视频 彻底删除（从回收站删除，支持多个）
+url:/api/file/real_delete/
+方法：post
+格式：json
+请求字段：
+           app_user_cid 用户编号
+           file_cid_list 文件编号
+响应结果：
+           code=0 --服务器异常
+           code=1000 正常返回
+
+20.图片/视频 恢复（从回收站恢复到相册，支持多个）
+url:/api/file/recover/
+方法：post
+格式：json
+请求字段：
+           app_user_cid 用户编号
+           file_cid_list 文件列表编号
+响应结果：
+           code=0 --服务器异常
+           code=1000 正常返回
+
+21.任务列表
+url:/api/task/list/
+方法：post
+格式：json
+请求字段：
+           app_user_cid 用户编号
+响应结果：
+           code=0 --服务器异常
+           code=1000 正常返回
+                  list:[
+                         {...}
+                        ]
+
+22.删除任务(可多个)
+url:/api/task/delete/
+方法：post
+格式：json
+请求字段：
+           app_user_cid 用户编号
+           task_cid_list 任务列表编号
+响应结果：
+           code=0 --服务器异常
+           code=1000 正常返回
+
+23.暂停任务（可多个）
+url:/api/task/stop/
+方法：post
+格式：json
+请求字段：
+           app_user_cid 用户编号
+           task_cid_list 任务列表编号
+响应结果：
+           code=0 --服务器异常
+           code=1000 正常返回
+
+24.重启任务（可多个）
+url:/api/task/start/
+方法：post
+格式：json
+请求字段：
+           app_user_cid 用户编号
+           task_cid_list 任务列表编号
+响应结果：
+           code=0 --服务器异常
+           code=1000 正常返回
+
+25.清除任务记录（可多个）
+url:/api/task/record/delete/
+方法：post
+格式：json
+请求字段：
+           app_user_cid 用户编号
+           task_cid_list 任务列表编号
+响应结果：
+           code=0 --服务器异常
+           code=1000 正常返回
+
+
+
+26.帮助中心官方反馈列表
+url:/api/feedback/list/
+方法：post
+格式：json
+请求字段：
+          app_user_cid 用户编号
+响应结果：
+          code=0 --服务器异常
+          code=1000 正常返回
+               list:[
+                       {
+                         cid:'',
+                         category:'',
+                         content":'',
+                         feedback:''
+                        }
+                      ]
+27.帮助中心个人反馈列表
+url:/api/feedback/userlist/
+方法：post
+格式：json
+请求字段：
+          app_user_cid 用户编号
+响应结果：
+          code=0 --服务器异常
+          code=1000 正常返回
+               list:[
+                       {
+                         cid:'',
+                         category:'',
+                         content":'',
+                         feedback:''
+                        }
+                      ]
+
+28.添加反馈信息
+url:/api/feedback/add/
+方法：post
+格式：json
+请求字段：
+          app_user_cid 用户编号
+          content 内容
+响应结果：
+          code=0 --服务器异常
+          code=1000 正常返回
+          code=1002 内容不能为空
+
+
+29.修改个人头像（缩略图存到本地即可）
+url:/api/user/head_picture/edit/
+方法：post
+格式：json
+请求字段：
+          app_user_cid 用户编号
+          head_picture 头像文件对象
+响应结果：
+          code=0 --服务器异常
+          code=1000 正常返回
+          code=1002 头像不能为空
+          
+30.修改个人昵称
+url:/api/user/nick_name/edit/
+方法：post
+格式：json
+请求字段：
+          app_user_cid 用户编号
+          nick_name 昵称
+响应结果：
+          code=0 --服务器异常
+          code=1000 正常返回
+          code=1001 昵称不能为空
+          code=1002 昵称不符合规则
+
+
+31.用户协议
+url:/api/agreement/one/
+方法：get
+格式：json
+请求字段：
+
+响应结果：
+          code=0 --服务器异常
+          code=1000 正常返回
+
+
+
+
+               
+               
+
+
+
+           

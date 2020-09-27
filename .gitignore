@@ -1,0 +1,10 @@
+.idea/
+*.pyc
+logs/*
+*.orig
+static/files/*
+venv/
+Pipfile.lock
+Pipfile
+static/js/echarts/map/json/mapdata/*
+temp/

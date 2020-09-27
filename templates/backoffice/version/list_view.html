@@ -1,0 +1,274 @@
+{% extends '../base.html' %}
+{% autoescape None %}
+{% block content %}
+{% from db import STATUS_NOT_FORCE_UPDATE,STATUS_IS_FORCE_UPDATE, STATUS_PREV_VERSION ,STATUS_LATEST_VERSION ,STATUS_UNPUBLISHED_VERSION,STATUS_PUBLISHED_VERSION%}
+
+<div class="ml10 mr10 pt8 pb8 clear">
+    <a href="{{ reverse_url('backoffice_version_add')}}?lang={{lang}}" class="btn btn_i btn_primary btn_lg pr">{{translate('version.add')}}<i
+            class="add_role_i"></i>
+    </a>
+    <a href="javascript:;" class="pr refresh_btn pl20 mr20 fr mt10">
+        <i class="refresh_i"></i>{{translate('base.refresh')}}
+    </a>
+</div>
+<div class="filter_box clear">
+    <div class="filter_condition fl">
+        <span>{{translate('base.filter')}}：</span>
+        <input id="search_version" type="text" class="username" placeholder="{{translate('version.filter.version')}}"
+              value="{{ string_display(search_version, '') }}">
+    </div>
+    <div class="filter_btn fr">
+        <a href="#" class="btn btn_i btn_primary pr mr5 search_data">{{translate('base.search')}}<i class="btn_search"></i></a>
+        <a href="{{ reverse_url('backoffice_version_list') }}?lang={{lang}}" class="btn btn_default">{{translate('base.cancel')}}</a>
+    </div>
+</div>
+<div class="data_list pr no_mt">
+    <div class="clear">
+        <div class="fl">
+            <h3 class="list_title pr">{{translate('base.data_list')}}<i class="list_title_i"></i></h3>
+        </div>
+    </div>
+    <div>
+        <table class="table_list">
+            <tr>
+                <th width="50"></th>
+                <th width="48">{{translate('base.num')}}</th>
+                <th>{{translate('version.num')}}</th>
+                <th>{{translate('version.update_content')}}</th>
+                <th>{{translate('version.link')}}</th>
+                <th>{{translate('version.is_force_update')}}</th>
+                <th>{{translate('version.is_latest_version')}}</th>
+                <th>{{translate('version.status')}}</th>
+                <th>{{translate('base.operation')}}</th>
+            </tr>
+            {% set role_list = paging.page_items %}
+            {% if role_list %}
+            {% for index, role in enumerate(role_list) %}
+            <tr>
+                <td class="tc">
+                    <i class="checkbox_i" oid="{{ role.oid }}"></i>
+                </td>
+                <td>{{ index + 1 }}</td>
+                <td>{{ role.version }}</td>
+                <td>{{ role.update_content }}</td>
+                <td>{{ role.link }}</td>
+                {% if role.is_force_update ==1 %}
+                <td>是</td>
+                {% else %}
+                <td>否</td>
+                {% end %}
+                {% if role. is_latest_version== 1%}
+                <td>是</td>
+                {% else %}
+                <td>否</td>
+                {% end %}
+                <td>
+                    <label class="table_switch">
+                        <input oid="{{ role.oid }}" class="status_switch" type="checkbox"
+                               {% if role.status == STATUS_PUBLISHED_VERSION %}checked="checked"{% end %}>
+                        <i></i>
+                    </label>
+                </td>
+                <td class="tools">
+                    <a href="{{ reverse_url('backoffice_version_edit') }}?manager_id={{ role.oid }}&lang={{lang}}"
+                       class="edit_i fl tips" data-name="{{translate('base.edit')}}"></a>
+
+                    <a href="#" class="delete_i fl delete_manager tips" oid="{{ role.oid }}" data-name="{{translate('base.delete')}}"></a>
+                </td>
+
+            </tr>
+            {% end %}
+            {% else %}
+            <tr>
+                <td colspan="6" align="center">{{translate('base.no_data')}}</td>
+            </tr>
+            {% end %}
+        </table>
+        <div class="table_control clear">
+            <div class="fl"><i class="checkbox_i mr25 ml15"></i>{{translate('base.check_all')}}</div>
+            <div class="fl ml20">
+                <select id="selected_operation">
+                    <option value="active">{{translate('base.enable')}}</option>
+                    <option value="inactive">{{translate('base.disable')}}</option>
+                    <option value="delete">{{translate('base.delete')}}</option>
+                </select>
+            </div>
+            <div class="fl">
+                <a href="#" class="btn btn_primary ml20 btn_sm selected_change">{{translate('base.confirm')}}</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% if role_list %}
+<div class="fix_page clear">
+    <div class="fr">
+        <span>{{translate('base.jump_to')}}</span>
+        <input id="jump_num" type="text" class="jump_num" onkeyup="do_jump_2_page(event, this.value);">
+        <span>{{translate('base.page')}}</span>
+    </div>
+    <div class="paging fr mr10">
+        <a href="javascript:;" onclick="do_jump_2_page(event, 1);"
+           {% if paging.current_page_num== 1 %}class="btn_disabled" {% end %}>{{translate('base.first_page')}}</a>
+        <a href="javascript:;" onclick="do_jump_2_page(event, {{ paging.previous_page_num }});"
+           {% if paging.current_page_num== 1 %}class="btn_disabled" {% end %}>{{translate('base.previous_page')}}</a>
+        {{ paging.other_pages_html }}
+        <a href="javascript:;" onclick="do_jump_2_page(event, {{ paging.next_page_num }});"
+           {% if paging.current_page_num== paging.total_pages %}class="btn_disabled" {% end %}>{{translate('base.next_page')}}</a>
+        <a href="javascript:;" onclick="do_jump_2_page(event, {{ paging.total_pages }});"
+           {% if paging.current_page_num== paging.total_pages %}class="btn_disabled" {% end %}>{{translate('base.last_page')}}</a>
+    </div>
+    <div class="fr mr20">
+        {{translate('base.total')}}
+        <span class="page_all">{{ paging.total_pages }}</span>
+        {{translate('base.page')}}/
+        <span class="data_all">{{ paging.total_items }}</span>
+        {{translate('base.items_data')}}
+    </div>
+    <div class="fr mr15">
+        <span>{{translate('base.each_page')}}</span>
+        <select id="per_page_quantity" name="per_page_quantity" onchange="do_jump_2_page(event, 1);">
+            {% for num in [10, 20, 50, 100, 200] %}
+            <option value="{{ num }}" {% if paging.per_page_quantity== num %}selected{% end %}>{{ num }}</option>
+            {% end %}
+        </select>
+        <span>{{translate('base.items')}}</span>
+    </div>
+</div>
+
+{% end %}
+
+<script>
+
+    $(function () {
+        $('.status_switch').on('click', function () {
+            var obj = $(this);
+            var manager_id = $(this).attr('oid');
+            var target_status = $(this).prop('checked') ? {{ STATUS_PUBLISHED_VERSION }} :{{ STATUS_UNPUBLISHED_VERSION }};
+            if (manager_id && target_status!=2) {
+                var data = {
+                    'manager_id': [manager_id],
+                    'target_status': target_status
+                };
+                var url = "{{ reverse_url('backoffice_version_status') }}";
+                display_loading();
+                ajaxPost(url, data, function (ret) {
+                    if (ret.code !== 1) {
+                        tip_msg("{{translate('version.update_status_fail')}}", 2000, function () {
+                            if (target_status === {{ STATUS_PUBLISHED_VERSION }}) {
+                                obj.prop('checked', '')
+                            } else {
+                                obj.prop('checked', 'checked')
+                            }
+                        });
+                    } else {
+                        tip_msg("{{translate('version.update_status_success')}}", 2000);
+                    }
+                });
+                remove_loading();
+
+            } else {
+                tip_msg("{{translate('version.update_status_fail')}}", 2000, function () {
+                    if (target_status === {{ STATUS_PUBLISHED_VERSION }}) {
+                        obj.prop('checked', '')
+                    } else {
+                        obj.prop('checked', 'checked')
+                    }
+                });
+            }
+        });
+        $(".delete_i").click(function (event) {
+            var btn=["{{translate('base.sure')}}", "{{translate('base.cancel')}}"];
+            confirm_dialog("{{translate('base.warn')}}",btn,"{{translate('version.delete.version')}}", function () {
+                display_loading();
+                var role_id = ($(event.target).attr('oid'));
+                var data = {
+                    'manager_id': [role_id],
+                };
+                if (role_id) {
+                    var url="{{ reverse_url('backoffice_version_delete') }}"
+                    ajaxPost(url, data, function (result) {
+                        if (result.code === 1) {
+                            tip_msg("{{translate('version.delete.success')}}", 2000, function () {
+                                window.location.reload();
+                            });
+                        } else {
+                            tip_msg("{{translate('version.delete.fail')}}", 2000);
+                        }
+                        remove_loading()
+                    });
+                }
+            });
+        });
+        $(".refresh_btn").click(function () {
+            window.location.reload();
+        });
+        $('.search_data').on('click', function () {
+            var param_dict = {
+                'search_version': $('#search_version').val(),
+                'per_page_quantity': $('#per_page_quantity').val(),
+                'lang':"{{lang}}",
+
+            };
+            window.location.href = "{{ reverse_url('backoffice_version_list') }}?" + dict_2_url_params(param_dict);
+        });
+        $('.selected_change').on('click', function () {
+            var operation = $('#selected_operation').val();
+            var selected_manager_ids = [];
+            var obj_list = $('.table_list').find('.checkbox_i.checked');
+            for (var i = 0; i < obj_list.length; i++) {
+                var obj = obj_list[i];
+                if ($(obj).attr('oid')) {
+                    selected_manager_ids.push($(obj).attr('oid'));
+                }
+            }
+            var btn=["{{translate('base.sure')}}", "{{translate('base.cancel')}}"];
+            if (selected_manager_ids.length > 0) {
+                var data = {
+                    'manager_id': selected_manager_ids
+                };
+                if (operation === 'delete') {
+                    confirm_dialog("{{translate('base.warn')}}",btn, "{{translate('version.delete.version')}}", function () {
+                        display_loading();
+                        var url = "{{ reverse_url('backoffice_version_delete') }}";
+                        ajaxPost(url, data, function (ret) {
+                            if (ret.code == 1) {
+                                tip_msg("{{translate('version.delete.success')}}", 2000, function () {
+                                    window.location.href = "{{ reverse_url('backoffice_version_list') }}";
+                                });
+                            } else {
+                                tip_msg("{{translate('version.delete.fail')}}", 2000);
+                            }
+                        });
+                        remove_loading();
+                    });
+
+                } else if (operation === 'active' || operation === 'inactive') {
+                    data['target_status'] = operation === 'active' ? {{ STATUS_PUBLISHED_VERSION }} :{{ STATUS_UNPUBLISHED_VERSION }};
+                    var url = "{{ reverse_url('backoffice_version_status') }}";
+
+                    confirm_dialog("{{translate('base.warn')}}",btn, "{{translate('version.update.version')}}", function () {
+                        display_loading();
+                        ajaxPost(url, data, function (ret) {
+                            if (ret.code !== 1) {
+                                tip_msg("{{translate('version.update_status_fail')}}", 2000);
+                            } else {
+                                tip_msg("{{translate('version.update_status_success')}}", 2000, function () {
+                                    window.location.href = "{{ reverse_url('backoffice_version_list') }}";
+                                });
+
+                            }
+                        });
+                        remove_loading();
+                    });
+
+                } else {
+                    tip_msg("{{translate('base.batch_operation_fail')}}", 2000);
+                }
+            } else {
+                tip_msg("{{translate('base.select_data')}}", 2000);
+            }
+
+        });
+    });
+</script>
+{% end %}

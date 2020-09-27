@@ -1,0 +1,168 @@
+{% extends '../base.html' %}
+{% autoescape None %}
+
+{% block content %}
+{% from db import STATUS_FEEDBACK_INVALID,STATUS_NOT_FORCE_UPDATE,STATUS_IS_FORCE_UPDATE, STATUS_PREV_VERSION ,STATUS_LATEST_VERSION ,STATUS_UNPUBLISHED_VERSION,STATUS_PUBLISHED_VERSION%}
+
+<div class="ml10 mr10 pt8 pb8 clear">
+    <a href="{{ reverse_url('backoffice_agreement_add')}}?lang={{lang}}" class="btn btn_i btn_primary btn_lg pr">{{translate('agreement.add')}}<i
+            class="add_role_i"></i>
+    </a>
+    <a href="javascript:;" class="pr refresh_btn pl20 mr20 fr mt10">
+        <i class="refresh_i"></i>{{translate('base.refresh')}}
+    </a>
+</div>
+<div class="data_list pr no_mt">
+    <div class="clear">
+        <div class="fl">
+            <h3 class="list_title pr">{{translate('base.data_list')}}<i class="list_title_i"></i></h3>
+        </div>
+    </div>
+    <div>
+        <table class="table_list">
+            <tr>
+                <th width="50"></th>
+                <th width="48">{{translate('base.num')}}</th>
+                <th>{{translate('agreement.title')}}</th>
+                <th>{{translate('agreement.created_at')}}</th>
+                <th>{{translate('agreement.category')}}</th>
+                <th>{{translate('base.operation')}}</th>
+            </tr>
+            {% set role_list = paging.page_items %}
+            {% if role_list %}
+            {% for index, data in enumerate(role_list) %}
+            <tr>
+                <td class="tc">
+                    <i class="checkbox_i" oid="{{ data.oid }}"></i>
+                </td>
+                <td>{{ index + 1 }}</td>
+                <td>{{data.title}}</td>
+                <td>{{data.created_dt }}</td>
+                {% if data.category==0 %}
+                <td>协议</td>
+                {% else %}
+                <td>隐私</td>
+                {% end %}
+                <td class="tools">
+                    <a href="{{ reverse_url('backoffice_agreement_edit') }}?manager_id={{ data.oid }}&lang={{lang}}"
+                       class="edit_i fl tips" data-name="{{translate('base.edit')}}"></a>
+
+                    <a href="#" class="delete_i fl delete_manager tips" oid="{{ data.oid }}"
+                       data-name="{{translate('base.delete')}}"></a>
+                </td>
+
+            </tr>
+            {% end %}
+            {% else %}
+            <tr>
+                <td colspan="6" align="center">{{translate('base.no_data')}}</td>
+            </tr>
+            {% end %}
+        </table>
+        <div class="table_control clear">
+            <div class="fl"><i class="checkbox_i mr25 ml15"></i>{{translate('base.check_all')}}</div>
+            <div class="fl ml20">
+                <select id="selected_operation">
+                    <option value="active">{{translate('base.enable')}}</option>
+                    <option value="inactive">{{translate('base.disable')}}</option>
+                    <option value="delete">{{translate('base.delete')}}</option>
+                </select>
+            </div>
+            <div class="fl">
+                <a href="#" class="btn btn_primary ml20 btn_sm selected_change">{{translate('base.confirm')}}</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% if role_list %}
+<div class="fix_page clear">
+    <div class="fr">
+        <span>{{translate('base.jump_to')}}</span>
+        <input id="jump_num" type="text" class="jump_num" onkeyup="do_jump_2_page(event, this.value);">
+        <span>{{translate('base.page')}}</span>
+    </div>
+    <div class="paging fr mr10">
+        <a href="javascript:;" onclick="do_jump_2_page(event, 1);"
+           {% if paging.current_page_num== 1 %}class="btn_disabled" {% end %}>{{translate('base.first_page')}}</a>
+        <a href="javascript:;" onclick="do_jump_2_page(event, {{ paging.previous_page_num }});"
+           {% if paging.current_page_num== 1 %}class="btn_disabled" {% end %}>{{translate('base.previous_page')}}</a>
+        {{ paging.other_pages_html }}
+        <a href="javascript:;" onclick="do_jump_2_page(event, {{ paging.next_page_num }});"
+           {% if paging.current_page_num== paging.total_pages %}class="btn_disabled" {% end %}>{{translate('base.next_page')}}</a>
+        <a href="javascript:;" onclick="do_jump_2_page(event, {{ paging.total_pages }});"
+           {% if paging.current_page_num== paging.total_pages %}class="btn_disabled" {% end %}>{{translate('base.last_page')}}</a>
+    </div>
+    <div class="fr mr20">
+        {{translate('base.total')}}
+        <span class="page_all">{{ paging.total_pages }}</span>
+        {{translate('base.page')}}/
+        <span class="data_all">{{ paging.total_items }}</span>
+        {{translate('base.items_data')}}
+    </div>
+    <div class="fr mr15">
+        <span>{{translate('base.each_page')}}</span>
+        <select id="per_page_quantity" name="per_page_quantity" onchange="do_jump_2_page(event, 1);">
+            {% for num in [10, 20, 50, 100, 200] %}
+            <option value="{{ num }}" {% if paging.per_page_quantity== num %}selected{% end %}>{{ num }}</option>
+            {% end %}
+        </select>
+        <span>{{translate('base.items')}}</span>
+    </div>
+</div>
+
+{% end %}
+
+<script>
+
+    $(function () {
+
+
+        $(".delete_i").click(function (event) {
+            var btn = ["{{translate('base.sure')}}", "{{translate('base.cancel')}}"];
+            confirm_dialog("{{translate('base.warn')}}", btn, "{{translate('agreement.delete.confirm')}}", function () {
+                display_loading();
+                var role_id = ($(event.target).attr('oid'));
+                var data = {
+                    'manager_id': [role_id],
+                };
+                if (role_id) {
+                    var url = "{{ reverse_url('backoffice_agreement_delete') }}"
+                    ajaxPost(url, data, function (result) {
+                        if (result.code === 1) {
+                            tip_msg("{{translate('agreement.delete_success')}}", 2000, function () {
+                                window.location.reload();
+                            });
+                        } else {
+                            tip_msg("{{translate('agreement.delete_fail')}}", 2000);
+                        }
+                        remove_loading()
+                    });
+                }
+            });
+        });
+        $(".refresh_btn").click(function () {
+            window.location.reload();
+        });
+        $('.search_data').on('click', function () {
+            var operation = $('#selected_category').val();
+            console.log(operation)
+            if (operation === 'person') {
+                var advice_category = 1
+            }
+            if (operation === 'pubilc') {
+                advice_category = 2
+            }
+            console.log(advice_category)
+            var param_dict = {
+                'advice_category': advice_category,
+                'per_page_quantity': $('#per_page_quantity').val(),
+                'lang': "{{lang}}",
+
+            };
+            console.log(param_dict)
+            window.location.href = "{{ reverse_url('backoffice_advice_list') }}?" + dict_2_url_params(param_dict);
+        });
+
+    });
+</script>
+{% end %}

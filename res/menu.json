@@ -1,0 +1,124 @@
+{
+  "backend": [
+    {
+      "code": "B01",
+      "title": "组织",
+      "en_title": "Organization",
+      "path": null,
+      "context": null,
+      "weight": 1,
+      "belong_path_list": [],
+      "permission_code_list": [
+        "B01000000",
+        "B01010000",
+        "B01020000",
+        "B01030000",
+        "B01040000"
+      ],
+      "style_name_list": [],
+      "flags": [],
+      "sub_menu_list": [
+        {
+          "code": "B0101",
+          "title": "用户管理",
+          "en_title": "User Management",
+          "path": "/backoffice/user/list/",
+          "context": null,
+          "weight": 11,
+          "belong_path_list": [
+            "/backoffice/user/add/",
+            "/backoffice/user/edit/",
+            "/backoffice/user/permission/"
+          ],
+          "permission_code_list": [
+            "B01010000"
+          ],
+          "style_name_list": [
+            "manager_list_i"
+          ],
+          "flags": []
+        },
+        {
+          "code": "B0102",
+          "title": "角色管理",
+          "en_title": "Role Management",
+          "path": "/backoffice/role/list/",
+          "context": null,
+          "weight": 12,
+          "belong_path_list": [
+            "/backoffice/role/add/",
+            "/backoffice/role/edit/(R)/",
+            "/backoffice/role/perm_assign/(R)/"
+          ],
+          "permission_code_list": [
+            "B01020000"
+          ],
+          "style_name_list": [
+            "role_list_i"
+          ],
+          "flags": []
+        },
+        {
+          "code": "B0103",
+          "title": "版本管理",
+          "en_title": "Version Management",
+          "path": "/backoffice/version/list/",
+          "context": null,
+          "weight": 13,
+          "belong_path_list": [
+            "/backoffice/version/add/",
+            "/backoffice/version/edit/",
+            "/backoffice/version/delete/"
+          ],
+          "permission_code_list": [
+            "B01030000"
+          ],
+          "style_name_list": [
+            "manager_list_i"
+          ],
+          "flags": []
+        },
+        {
+          "code": "B0104",
+          "title": "建议反馈",
+          "en_title": "Advice feedback",
+          "path": "/backoffice/advice/list/",
+          "context": null,
+          "weight": 13,
+          "belong_path_list": [
+            "/backoffice/advice/add/",
+            "/backoffice/advice/edit/",
+            "/backoffice/advice/delete/"
+          ],
+          "permission_code_list": [
+            "B01040000"
+          ],
+          "style_name_list": [
+            "manager_list_i"
+          ],
+          "flags": []
+        },
+        {
+          "code": "B0105",
+          "title": "用户协议",
+          "en_title": "User Agreement",
+          "path": "/backoffice/agreement/list/",
+          "context": null,
+          "weight": 13,
+          "belong_path_list": [
+            "/backoffice/agreement/add/",
+            "/backoffice/agreement/edit/",
+            "/backoffice/agreement/delete/"
+          ],
+          "permission_code_list": [
+            "B01050000"
+          ],
+          "style_name_list": [
+            "manager_list_i"
+          ],
+          "flags": []
+        }
+      ]
+    }
+  ]
+}

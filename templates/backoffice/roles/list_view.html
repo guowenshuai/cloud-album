@@ -1,0 +1,174 @@
+{% extends '../base.html' %}
+{% autoescape None %}
+{% block content %}
+{% from db import STATUS_ROLE_ACTIVE %}
+<div class="ml10 mr10 pt8 pb8 clear">
+    <a href="{{ reverse_url('backoffice_role_add')}}?lang={{lang}}" class="btn btn_i btn_primary btn_lg pr">{{translate('role.add')}}<i
+            class="add_role_i"></i>
+    </a>
+    <a href="javascript:;" class="pr refresh_btn pl20 mr20 fr mt10">
+        <i class="refresh_i"></i>{{translate('base.refresh')}}
+    </a>
+</div>
+<div class="data_list pr no_mt">
+    <div class="clear">
+        <div class="fl">
+            <h3 class="list_title pr">{{translate('base.data_list')}}<i class="list_title_i"></i></h3>
+        </div>
+    </div>
+    <div>
+        <table class="table_list">
+            <tr>
+                <th width="48">{{translate('base.num')}}</th>
+                <th>{{translate('role.code')}}</th>
+                <th>{{translate('role.name')}}</th>
+                <th>{{translate('role.user_num')}}</th>
+                <th>{{translate('base.add_time')}}</th>
+                <th>{{translate('role.remark')}}</th>
+                <th>{{translate('role.status')}}</th>
+                <th>{{translate('base.operation')}}</th>
+            </tr>
+            {% set role_list = paging.page_items %}
+            {% if role_list %}
+            {% for index, role in enumerate(role_list) %}
+            <tr>
+                <td>{{ index + 1 }}</td>
+                <td>{{ string_display(role.code) }}</td>
+                <td>{{ string_display(role.title) }}</td>
+                {% set needless = role.needless if role.needless else {} %}
+                {% set user_amount = needless.get('user_amount', 0) %}
+                <td>{{ user_amount }}</td>
+                <td>{{ datetime_format(role.created_dt) }}</td>
+                <td>{{ string_display(role.content) }}</td>
+                <td>
+                    <label class="table_switch">
+                        <input class="role_status" type="checkbox"
+                               {% if role.status == STATUS_ROLE_ACTIVE %}checked="checked"{% end %}
+                               oid="{{ role.oid }}">
+                        <i></i>
+                    </label>
+                </td>
+                <td class="tools">
+                    <a href="{{ reverse_url('backoffice_role_perm_assign', role.oid) }}?lang={{lang}}"
+                       class="setting_i fl tips" data-name="{{translate('base.set_permission')}}">
+                    </a>
+                    <a href="{{ reverse_url('backoffice_role_edit', role.oid) }}?lang={{lang}}" class="edit_i fl tips"
+                       data-name="{{translate('base.edit')}}">
+                    </a>
+                    <a href="javascript:;" class="delete_i fl tips" oid="{{ role.oid }}" data-name="{{translate('base.delete')}}">
+
+                    </a>
+                </td>
+            </tr>
+            {% end %}
+            {% else %}
+            <tr>
+                <td colspan="6" align="center">{{translate('base.no_data')}}</td>
+            </tr>
+            {% end %}
+        </table>
+    </div>
+</div>
+{% if role_list %}
+<div class="fix_page clear">
+    <div class="fr">
+        <span>{{translate('base.jump_to')}}</span>
+        <input id="jump_num" type="text" class="jump_num" onkeyup="do_jump_2_page(event, this.value);">
+        <span>{{translate('base.page')}}</span>
+    </div>
+    <div class="paging fr mr10">
+        <a href="javascript:;" onclick="do_jump_2_page(event, 1);"
+           {% if paging.current_page_num== 1 %}class="btn_disabled" {% end %}>{{translate('base.first_page')}}</a>
+        <a href="javascript:;" onclick="do_jump_2_page(event, {{ paging.previous_page_num }});"
+           {% if paging.current_page_num== 1 %}class="btn_disabled" {% end %}>{{translate('base.previous_page')}}</a>
+        {{ paging.other_pages_html }}
+        <a href="javascript:;" onclick="do_jump_2_page(event, {{ paging.next_page_num }});"
+           {% if paging.current_page_num== paging.total_pages %}class="btn_disabled" {% end %}>{{translate('base.next_page')}}</a>
+        <a href="javascript:;" onclick="do_jump_2_page(event, {{ paging.total_pages }});"
+           {% if paging.current_page_num== paging.total_pages %}class="btn_disabled" {% end %}>{{translate('base.last_page')}}</a>
+    </div>
+    <div class="fr mr20">
+        {{translate('base.total')}}
+        <span class="page_all">{{ paging.total_pages }}</span>
+        {{translate('base.page')}}/
+        <span class="data_all">{{ paging.total_items }}</span>
+        {{translate('base.items_data')}}
+    </div>
+    <div class="fr mr15">
+        <span>{{translate('base.each_page')}}</span>
+        <select id="per_page_quantity" name="per_page_quantity" onchange="do_jump_2_page(event, 1);">
+            {% for num in [10, 20, 50, 100, 200] %}
+            <option value="{{ num }}" {% if paging.per_page_quantity== num %}selected{% end %}>{{ num }}</option>
+            {% end %}
+        </select>
+        <span>{{translate('base.items')}}</span>
+    </div>
+</div>
+<script>
+    function do_jump_2_page(event, to_page_num) {
+        if (event) {
+
+            var is_checked = false;
+            if (event.type === "keyup" && event.keyCode !== 13) {
+                is_checked = true;
+            }
+            if (is_checked) {
+                $("#jump_num").val(to_page_num.replace(/[^\d]/g, ''));
+            } else {
+                display_loading();
+                // 填充请求参数
+                var params = {
+                    'page': to_page_num,
+                    'per_page_quantity': $('#per_page_quantity').val() || {{ per_page_quantity }},
+                    'lang':"{{lang}}",
+                };
+                window.location.href = "{{ reverse_url('backoffice_role_list') }}?" + dict_2_url_params(params);
+            }
+        }
+    }
+</script>
+{% end %}
+<script>
+    $(function () {
+        $(".role_status").click(function (event) {
+            display_loading();
+            var target = $(event.target);
+            var role_id = ($(event.target).attr('oid'));
+            var status = target.prop("checked");
+            ajaxPost("/backoffice/role/status_switch/" + role_id + "/", {"status": status}, function (result) {
+                if (result.code !== 1) {
+                    tip_msg("{{translate('role.status.update.fail')}}", 2000);
+                    target.prop("checked", !status);
+                } else {
+                     tip_msg("{{translate('role.status.update.success')}}", 2000);
+                }
+                remove_loading()
+            })
+        });
+
+        $(".delete_i").click(function (event) {
+            var btn=["{{translate('base.sure')}}", "{{translate('base.cancel')}}"];
+            confirm_dialog("{{translate('base.warn')}}",btn,"{{translate('role.delete.confirm')}}", function () {
+                display_loading();
+                var role_id = ($(event.target).attr('oid'));
+                if (role_id) {
+                    ajaxPost("/backoffice/role/delete/" + role_id + "/", {}, function (result) {
+                        if (result.code === 1) {
+                            tip_msg("{{translate('role.delete.success')}}", 2000, function () {
+                                window.location.reload();
+                            });
+                        } else {
+                            tip_msg("{{translate('role.delete.fail')}}", 2000);
+                        }
+                        remove_loading()
+                    });
+                }
+            });
+        });
+
+        $(".refresh_btn").click(function () {
+            window.location.reload();
+        });
+    });
+</script>
+{% end %}

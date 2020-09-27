@@ -1,0 +1,100 @@
+{% extends '../base.html' %}
+{% autoescape None %}
+{% block js %}
+<script type="text/javascript" src="{{ static_url('js/plugins/ueditor/ueditor.config.js') }}"></script>
+<script type="text/javascript" src="{{ static_url('js/plugins/ueditor/ueditor.all.min.js') }}"> </script>
+<script type="text/javascript" src="{{ static_url('js/plugins/ueditor/lang/zh-cn/zh-cn.js') }}"></script>
+{% end %}
+{% block content %}
+{% from db import STATUS_FEEDBACK_INVALID,STATUS_FEEDBACK_EFFECTIVE %}
+<div class="main_header pt10 pb10 clear">
+    <div class="fl bread_nav">
+        <a href="{{ reverse_url('backoffice_agreement_list') }}?lang={{lang}}" class="pl10 ml10">{{translate('agreement.list')}}</a>
+        <span> &gt; {{translate('advice.edit')}}</span>
+    </div>
+    <div class="fr clear">
+        <a href="javascript:void(0);" onclick="self.location=document.referrer;" class="fl back_btn pl20 mr20"><i
+                class="back_i"></i>{{translate('base.return')}}</a>
+    </div>
+</div>
+<div class="edit_info">
+    <div>
+        <h3 class="list_title pr add_manage">{{translate('agreement.edit')}}<i class="add_i_txt"></i></h3>
+    </div>
+    <div class="edit_info_detail">
+        <table class="table_form">
+            <tr>
+                <th width="40%"><span class="necessary">*</span>{{translate('agreement.title')}}</th>
+                <td><input class="input_text" type="text"  name="agreement_title" id="agreement_title"
+                value="{{ manager.title }}" ></td>
+            </tr>
+            <tr>
+                <th width="40%"><span class="necessary">*</span>{{translate('agreement.title')}}</th>
+                <td><select id="category">
+                   <option value="0">{{translate('agreement.category.agr')}}</option>
+                   <option value="1">{{translate('agreement.category.se')}}</option>
+               </select></td>
+            </tr>
+            <tr>
+                <th width="40%"><span class="necessary">*</span>{{translate('agreement.content')}}</th>
+                <td><div><script id="editor" type="text/plain" style="width:1024px;height:500px;"></script></div></td>
+            </tr>
+
+            <tr>
+                <th></th>
+                <td>
+                        <span class="cl_danger">
+
+                        </span>
+                </td>
+            </tr>
+            <tr>
+                <th></th>
+                <td><a href="#" class="btn btn_primary mt15 btn_lg submit_btn">{{translate('base.submit')}}</a></td>
+            </tr>
+        </table>
+    </div>
+</div>
+<script>
+       $(function () {
+           var ue = UE.getEditor('editor', {
+               serverUrl: "/common/uedit/upload/"
+        });
+           ue.ready(function () {
+        ue.setContent("{{manager.content}}");
+        });
+        // 提交表单
+        $('.submit_btn').on('click', function () {
+            var manager_id = '{{ manager_id }}';
+            var content = ue.getContent();
+            var title = $('#agreement_title').val();
+            var category = $('#category').val();
+            if (!(content && title)) {
+                $('.cl_danger').html("{{translate('base.must_message')}}");
+                return false;
+            }
+            var url = "{{ reverse_url('backoffice_agreement_edit') }}";
+            var data = {
+                'content': content,
+                'manager_id':manager_id,
+                'title': title,
+                'category':category
+            };
+            display_loading();
+            ajaxPost(url, data, function (ret) {
+                if (ret.code == -2) {
+                    $('.cl_danger').html("{{translate('base.full_message')}}");
+
+                } else if (ret.code == 1) {
+                    tip_msg("{{translate('agreement.edit_success')}}", 2000, function () {
+                        window.location.href = "{{ reverse_url('backoffice_agreement_list') }}?lang={{lang}}";
+                    });
+                } else {
+                    $('.cl_danger').html("{{translate('base.system_err')}}");
+                }
+            });
+            remove_loading();
+        })
+    })
+</script>
+{% end %}

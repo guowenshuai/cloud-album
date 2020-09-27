@@ -1,0 +1,132 @@
+{% extends '../base.html' %}
+{% autoescape None %}
+{% block content %}
+{% from db import STATUS_NOT_FORCE_UPDATE,STATUS_IS_FORCE_UPDATE, STATUS_PREV_VERSION ,STATUS_LATEST_VERSION ,STATUS_UNPUBLISHED_VERSION,STATUS_PUBLISHED_VERSION%}
+
+<div class="main_header pt10 pb10 clear">
+    <div class="fl bread_nav">
+        <a href="{{ reverse_url('backoffice_version_list') }}?lang={{lang}}" class="pl10 ml10">{{translate('version.version_list')}}</a>
+        <span> &gt; {{translate('version.edit_version')}}</span>
+    </div>
+    <div class="fr clear">
+        <a href="javascript:void(0);" onclick="self.location=document.referrer;" class="fl back_btn pl20 mr20"><i
+                class="back_i"></i>{{translate('base.return')}}</a>
+    </div>
+</div>
+<div class="edit_info">
+    <div>
+        <h3 class="list_title pr add_manage">{{translate('version.edit_version')}}<i class="add_i_txt"></i></h3>
+    </div>
+    <div class="edit_info_detail">
+        <table class="table_form">
+            <tr>
+                <th width="40%"><span class="necessary">*</span>{{translate('version.num')}}</th>
+                <td><input class="input_text" type="text" name="version_num" id="version_num"
+                value="{{ manager.version }}"></td>
+            </tr>
+            <tr>
+                <th width="40%"><span class="necessary">*</span>{{translate('version.update_content')}}</th>
+                <td><input class="input_text" type="text" name="version_content" id="version_content"
+                value="{{ manager.update_content }}"></td>
+            </tr>
+            <tr>
+                <th><span class="necessary">*</span>{{translate('version.link')}}</th>
+                <td><input class="input_text" type="text" name="version_link" id="version_link"
+                value="{{ manager.link }}"></td>
+            </tr>
+            <tr>
+                <th><span class="necessary">*</span>{{translate('version.is_force_update')}}</th>
+                <td>
+                    <label class="table_switch">
+                        <input type="checkbox"
+                               {% if manager.status == STATUS_NOT_FORCE_UPDATE %}checked="checked"{% end %}
+                               value="{{ STATUS_NOT_FORCE_UPDATE }}"
+                               id="force_update">
+                        <i></i>
+                    </label>
+                </td>
+            </tr>
+            <tr>
+                <th><span class="necessary">*</span>{{translate('version.is_latest_version')}}</th>
+                <td>
+                    <label class="table_switch">
+                        <input type="checkbox"
+                               {% if manager.status == STATUS_LATEST_VERSION %}checked="checked"{% end %}
+                               name="laster_version" value="{{ STATUS_LATEST_VERSION }}"
+                               id="laster_version">
+                        <i></i>
+                    </label>
+                </td>
+            </tr>
+
+            <tr>
+                <th><span class="necessary">*</span>{{translate('version.status')}}</th>
+                <td>
+                    <label class="table_switch">
+                        <input type="checkbox"
+                               {% if manager.status == STATUS_PUBLISHED_VERSION %}checked="checked"{% end %}
+                               name="status" value="{{ STATUS_PUBLISHED_VERSION }}"
+                               id="status">
+                        <i></i>
+                    </label>
+                </td>
+            </tr>
+            <tr>
+                <th></th>
+                <td>
+                        <span class="cl_danger">
+
+                        </span>
+                </td>
+            </tr>
+            <tr>
+                <th></th>
+                <td><a href="#" class="btn btn_primary mt15 btn_lg submit_btn">{{translate('base.submit')}}</a></td>
+            </tr>
+        </table>
+    </div>
+
+</div>
+<script>
+    $(function () {
+        // 提交表单
+        $('.submit_btn').on('click', function () {
+            var manager_id = '{{ manager_id }}';
+            var version_num = $('#version_num').val();
+            var version_content = $('#version_content').val();
+            var version_link = $('#version_link').val();
+            var force_update = $('#force_update').prop('checked') ? {{ STATUS_IS_FORCE_UPDATE }} :{{ STATUS_NOT_FORCE_UPDATE }};
+            var laster_version = $('#laster_version').prop('checked') ? {{ STATUS_LATEST_VERSION }} :{{ STATUS_PREV_VERSION }};
+            var status = $('#status').prop('checked') ? {{ STATUS_PUBLISHED_VERSION }} :{{ STATUS_UNPUBLISHED_VERSION }};
+            if (!(version_num && version_content && version_link)) {
+                $('.cl_danger').html("{{translate('base.must_message')}}");
+                return false;
+            }
+
+            var url = "{{ reverse_url('backoffice_version_edit') }}";
+            var data = {
+                'manager_id': manager_id,
+                'version_num': version_num,
+                'version_content': version_content,
+                'version_link': version_link,
+                'force_update': force_update,
+                'laster_version': laster_version,
+                'status': status,
+            };
+            display_loading();
+            ajaxPost(url, data, function (ret) {
+                if (ret.code == -3) {
+                    $('.cl_danger').html("{{translate('base.full_message')}}");
+                } else if (ret.code == 1) {
+                    tip_msg("{{translate('version.edit_success')}}", 2000, function () {
+                        window.location.href = "{{ reverse_url('backoffice_version_list') }}?lang={{lang}}";
+                    });
+                } else {
+                    $('.cl_danger').html("{{translate('base.system_err')}}");
+                }
+            });
+            remove_loading();
+        })
+    })
+</script>
+{% end %}

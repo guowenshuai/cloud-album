@@ -1,0 +1,57 @@
+获取token接口：
+Headers:
+Content-Type application/json
+
+Body:   raw
+{
+	"access_key_id":"L9lL_1c3kOVfqzFBAJ=zsxBiRGM8khMn",
+	"access_key_secret":"Mu2j3xyei_k_IzVRkTxrGkGvG=rQl71qjQhf7qfVw2cUV3LoLgpwMYFIdmWrtWDK"
+}
+
+#access_key_id 与 access_key_secret 需要在用户授权处获取
+
+其余接口：
+
+Headers:
+Content-Type  application/x-www-form-urlencoded
+
+Body:  x-www-form-urlencoded
+timestamp {{timestamp}}
+i         {{i}}
+vsign     {{vsign}}
+token     {{token}}
+key        value
+
+Pre-request Script:
+
+  let timestamp = new Date().getTime();
+  
+  pm.environment.set("timestamp", timestamp);
+  
+  let token = "nI34ZSP=tQD0WQzmwhq8KDdSxuWpUtHi";#该值需要从获取token接口获取
+  pm.environment.set("token", token);
+  
+  let formdata = pm.request.body.urlencoded;
+  
+  let query_data = {};
+  
+  let req_array = formdata.all()
+  for(let i=0; i<req_array.length; i++){
+      let key = req_array[i].key;
+      let value = req_array[i].value;
+      if ( key != 'token' && key != 'timestamp' && key != 'vsign' && key != 'i') {
+          query_data[key] = value
+      }
+  }
+  let body_data_json = JSON.stringify(query_data);
+  
+  let base64_i =  CryptoJS.enc.Base64.stringify(CryptoJS.enc.Utf8.parse(body_data_json));
+  pm.environment.set('i', base64_i);
+  
+  let vsign_origin = 'i=' + base64_i + '&timestamp=' + timestamp + '&token=' + token;
+  
+  let vsign = CryptoJS.MD5(vsign_origin).toString().toUpperCase();
+  pm.environment.set('vsign', vsign);
+
+
+
